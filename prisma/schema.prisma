@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  name          String?     
+  passwordHash  String?
+  avatarUrl     String?
+  role          UserRole    @default(USER)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  watchlists    Watchlist[]
+  reviews       Review[]
+  follows       Follow[]    @relation("UserFollows")
+  followers     Follow[]    @relation("UserFollowers")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  CRITIC
+}
+
+// Relational modeling for TMDB, Jikan, Open Library, Last.fm
+model MediaItem {
+  id            String      @id   // format: "tmdb_movie_550" | "jikan_manga_1" | "ol_book_OL1234W"
+  source        MediaSource
+  type          MediaType
+  title         String
+  originalTitle String?
+  tagline       String?
+  overview      String?
+  posterUrl     String?
+  backdropUrl   String?
+  releaseDate   DateTime?
+  runtime       Int?        // in minutes
+  
+  tmdbRating    Float?
+  tmdbVotes     Int?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  watchlists    Watchlist[]
+  reviews       Review[]
+}
+
+enum MediaSource {
+  TMDB
+  JIKAN
+  OPENLIBRARY
+  LASTFM
+  MANUAL
+}
+
+enum MediaType {
+  MOVIE
+  TV_SERIES
+  ANIME
+  WEB_SERIES
+  DOCUMENTARY
+  MANGA
+  COMIC
+  GRAPHIC_NOVEL
+  NOVEL
+  ALBUM
+  TRACK
+  ARTIST
+  SHORT_FILM
+  OVA
+  ONA
+  SPECIAL
+}
+
+model Watchlist {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaId     String
+  media       MediaItem   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  status      WatchStatus @default(PLAN_TO_WATCH)
+  rating      Float?      // User's personal rating 1-10
+  addedAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([userId, mediaId])
+}
+
+enum WatchStatus {
+  PLAN_TO_WATCH
+  WATCHING
+  COMPLETED
+  DROPPED
+  ON_HOLD
+}
+
+model Review {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaId     String
+  media       MediaItem   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  content     String      @db.Text
+  rating      Float       // 1-10 rating
+  hasSpoilers Boolean     @default(false)
+  likes       Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([userId, mediaId])
+}
+
+model Follow {
+  id            String    @id @default(cuid())
+  followerId    String
+  followingId   String
+  follower      User      @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  following     User      @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+
+  @@unique([followerId, followingId])
+}
