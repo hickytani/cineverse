@@ -331,7 +331,7 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
               <div className="flex flex-wrap gap-2">
                 {DEMOS.map(d => (
                   <button
-                    key={d.email}
+                    key={d.username}
                     type="button"
                     onClick={() => fillDemo(d)}
                     className="text-[11px] font-sans px-3 py-1.5 rounded border border-[var(--border-gold)] text-gold hover:bg-gold/10 transition-colors duration-200"
